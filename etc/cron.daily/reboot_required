@@ -1,0 +1,12 @@
+#!/bin/sh -e
+
+if [ -f /var/run/reboot-required ]; then
+        {
+                printf '*Reboot required* on `%s`\n' "$(hostname -f)";
+                printf 'Active kernel:\t%s\n' "$(uname -r)";
+                printf 'Installed kernel:\t%s\n' "$(dpkg -l | awk '/linux-image/ {print $3}'| sort -Vu | tail -1)";
+                if [ -s /var/run/reboot-required.pkgs ]; then
+                        printf 'Other upgrades to be activated:\t%s\n' "$(sort -Vu /var/run/reboot-required.pkgs | tr '\n' ', ')";
+                fi
+        } | /usr/local/bin/hermes
+fi

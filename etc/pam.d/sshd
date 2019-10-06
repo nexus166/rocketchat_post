@@ -1,0 +1,2 @@
+# append to file
+session	optional	pam_exec.so	/etc/pam.scripts/hermes.sh
