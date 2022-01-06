@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err = hermes.Send(payload); err != nil {
+	if _, err = hermes.Send(payload); err != nil {
 		panic(err)
 	}
 }

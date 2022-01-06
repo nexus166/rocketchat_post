@@ -122,24 +122,24 @@ func (t Templates) Process(d Data) (*bytes.Buffer, error) {
 	return bodyBuf, nil
 }
 
-func Send(postData io.Reader) error {
+func Send(postData io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, WebHook, postData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	defer HttpClient.CloseIdleConnections()
 	resp, err := HttpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(os.Stderr, resp.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected status code in response: %d", resp.StatusCode)
+		return resp, fmt.Errorf("unexpected status code in response: %d", resp.StatusCode)
 	}
-	return nil
+	return resp, nil
 }
