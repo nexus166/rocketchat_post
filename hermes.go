@@ -133,11 +133,6 @@ func Send(postData io.Reader) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	_, err = io.Copy(os.Stderr, resp.Body)
-	if err != nil {
-		return nil, err
-	}
 	if resp.StatusCode != 200 {
 		return resp, fmt.Errorf("unexpected status code in response: %d", resp.StatusCode)
 	}
