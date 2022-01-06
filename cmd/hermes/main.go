@@ -12,9 +12,11 @@ import (
 var (
 	showVersion           bool
 	semver, commit, built = "v0.0.0-dev", "local", "a while ago" //
+	templates             = hermes.Templates{}
 )
 
 func init() {
+	templates.SetFlags()
 	hermes.CLIFlags.BoolVar(&showVersion, "v", false, "print build version/date and exit")
 	for !hermes.CLIFlags.Parsed() {
 		if err := hermes.CLIFlags.Parse(os.Args[1:]); err != nil && err != flag.ErrHelp {
@@ -41,7 +43,11 @@ func main() {
 	if data.Stdin == "" && len(data.Args) < 1 {
 		panic("nothing to send")
 	}
-	if err := hermes.Post(data); err != nil {
+	payload, err := templates.Process(data)
+	if err != nil {
+		panic(err)
+	}
+	if err = hermes.Send(payload); err != nil {
 		panic(err)
 	}
 }

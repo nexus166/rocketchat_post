@@ -25,23 +25,32 @@ type (
 )
 
 var (
-	defaultWebHook = ""
-	webHook        = os.Getenv("HERMES_WEBHOOK")
+	defaultWebHook string
+	WebHook        = os.Getenv("HERMES_WEBHOOK")
 	alias          = os.Getenv("HERMES_ALIAS")
 	emoji          = os.Getenv("HERMES_EMOJI")
 	advanced       bool
-	debug          bool
+	argsfirst      bool
 
-	_templates Templates
+	debug bool
 
 	HttpClient = &http.Client{Timeout: 30 * time.Second}
-	argsfirst  bool
 
 	CLIFlags flag.FlagSet
 )
 
-func setFlags() {
-	CLIFlags.StringVar(&webHook, "W", defaultWebHook, "full webhook URL (env=WEBHOOK)")
+func init() {
+	if WebHook == "" && defaultWebHook != "" {
+		WebHook = defaultWebHook
+	}
+	if debug {
+		temple.DebugHTTPRequests = true
+	}
+	temple.StartTracking()
+}
+
+func (t Templates) SetFlags() {
+	CLIFlags.StringVar(&WebHook, "W", defaultWebHook, "full webhook URL (env=WEBHOOK)")
 	CLIFlags.StringVar(&alias, "alias", "", "alias")
 	CLIFlags.StringVar(&emoji, "e", ":satellite:", "emoji")
 	CLIFlags.BoolVar(&argsfirst, "a", false, "render arguments (if any) before stdin (if any), instead of the opposite")
@@ -55,7 +64,7 @@ the last template specified in the commandline will be executed,
 the others can be accessed with the "template" Action.
 `,
 		func(value string) error {
-			_templates = append(_templates, struct {
+			t = append(t, struct {
 				S      string
 				IsFile bool
 			}{value, false})
@@ -73,7 +82,7 @@ the others can be accessed with the "template" Action.
 			if err != nil {
 				return err
 			}
-			_templates = append(_templates, struct {
+			t = append(t, struct {
 				S      string
 				IsFile bool
 			}{value, true})
@@ -82,18 +91,7 @@ the others can be accessed with the "template" Action.
 	)
 }
 
-func init() {
-	setFlags()
-	if webHook == "" && defaultWebHook != "" {
-		webHook = defaultWebHook
-	}
-	if debug {
-		temple.DebugHTTPRequests = true
-	}
-	temple.StartTracking()
-}
-
-type postTpl struct {
+type POST struct {
 	Alias   string `json:"alias,omitempty"`
 	Avatar  string `json:"avatar,omitempty"`
 	Channel string `json:"channel,omitempty"`
@@ -102,36 +100,30 @@ type postTpl struct {
 	Emoji   string `json:"emoji,omitempty"`
 }
 
-func Post(d Data) error {
-	msg, err := process(d, _templates)
+func (t Templates) Process(d Data) (*bytes.Buffer, error) {
+	msg, err := t.work(d)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if advanced {
-		if err := send(msg); err != nil {
-			return err
-		}
-	} else {
-		bodyBuf := new(bytes.Buffer)
-		tpl := postTpl{Text: msg.String()}
-		if emoji != "" {
-			tpl.Emoji = emoji
-		}
-		if alias != "" {
-			tpl.Alias = alias
-		}
-		if err := json.NewEncoder(bodyBuf).Encode(&tpl); err != nil {
-			return err
-		}
-		if err := send(bodyBuf); err != nil {
-			return err
-		}
+		return msg, nil
 	}
-	return nil
+	bodyBuf := new(bytes.Buffer)
+	tpl := POST{Text: msg.String()}
+	if emoji != "" {
+		tpl.Emoji = emoji
+	}
+	if alias != "" {
+		tpl.Alias = alias
+	}
+	if err := json.NewEncoder(bodyBuf).Encode(&tpl); err != nil {
+		return nil, err
+	}
+	return bodyBuf, nil
 }
 
-func send(postData io.Reader) error {
-	req, err := http.NewRequest(http.MethodPost, webHook, postData)
+func Send(postData io.Reader) error {
+	req, err := http.NewRequest(http.MethodPost, WebHook, postData)
 	if err != nil {
 		return err
 	}

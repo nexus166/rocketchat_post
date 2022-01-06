@@ -18,7 +18,7 @@ func unsafeMode() bool {
 	return envvar
 }
 
-func process(d Data, t Templates) (*bytes.Buffer, error) {
+func (t Templates) work(d Data) (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	if len(t) > 0 {
 		argTemplates := map[string]string{}
