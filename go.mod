@@ -8,6 +8,6 @@ require (
 	github.com/jzelinskie/geddit v0.0.0-20200521013404-78c28c13fba2
 	github.com/nexus166/msg v2.4.0+incompatible
 	github.com/szampardi/xprint v1.0.9
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 )
